@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { User } from "./registerUser.model";
+import { User } from "./registerUser.model.js";
 
 const feedbackSchema = new Schema(
   {
@@ -8,8 +8,8 @@ const feedbackSchema = new Schema(
       required: true,
     },
     user: {
-      type: mongoose.Schema.ObjectId,
-      ref: User,
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   {
