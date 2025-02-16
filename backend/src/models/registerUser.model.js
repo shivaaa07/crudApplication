@@ -1,16 +1,14 @@
 import mongoose, { Schema } from "mongoose";
 
-const registerSchema = new Schema(
+const userSchema = new Schema(
   {
-    userName: {
+    name: {
       type: String,
       required: true,
-      lowercase: true,
     },
     email: {
       type: String,
       required: true,
-      lowercase: true,
       unique: true,
     },
     password: {
@@ -27,4 +25,4 @@ const registerSchema = new Schema(
   }
 );
 
-export const Register = mongoose.model("Register", registerSchema);
+export const User = mongoose.model("User", userSchema);

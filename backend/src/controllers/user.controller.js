@@ -1,154 +1,80 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { Register } from "../models/registerUser.model.js";
+import { User } from "../models/registerUser.model.js";
 
-// All User Data Router
-const allUser = async (req, res, next) => {
+// Register User Controller
+const registerUserController = async (req, res, next) => {
   try {
-    const allUserData = await Register.find();
-    res.status(200).json(allUserData);
+    // Get All Field form Frontend by User
+    const { name, email, password, confirmPassword } = req.body;
+    // Ensure all fields are provided
+    if (!name || !email || !password || !confirmPassword) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+    // Check User Already Exist or Not
+    const exitUser = await User.findOne({ email });
+    if (exitUser) {
+      return res.status(404).json({ message: "User Already Exist" });
+    }
+    // Created User are Store in MongoDB
+    const newUser = await User.create({
+      name,
+      email,
+      password,
+      confirmPassword,
+    });
+
+    res.status(200).json({ message: "User Register Successfully" });
   } catch (error) {
-    console.error("Error :", error);
+    console.error("Error:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+// Login Controller
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    // Check user fill all field or Not
+    if (!email || !password) {
+      return res
+        .status(401)
+        .json({ error: "Please Fill all the required input!" });
+    }
+    // Check user in MongoDB
+    const existUser = await User.findOne({ email });
+    if (!existUser) {
+      return res.status(404).json({ message: "User Not Found" });
+    }
+    // Check email and password field are correct
+    if (password !== existUser.password) {
+      return res
+        .status(401)
+        .json({ message: "Email or Password are incorrect" });
+    }
+    res.status(200).json({ message: "Login Successfull", existUser });
+  } catch (error) {
+    console.log("Internal Server Error", error);
     throw error;
   }
 };
 
-// Register User Router
-const registerUser = async (req, res, next) => {
+// All User Find
+const allUser = async (req, res) => {
   try {
-    const { userName, email, password, confirmPassword } = req.body;
-    if (password !== confirmPassword) {
-      return res.status(404).json({
-        message: "Password do not Match",
-      });
-    }
-
-    // Hash the password
-    const hash = await bcrypt.hash(password, 10);
-
-    // create the user in database
-    const user = await Register.create({
-      userName,
-      email,
-      password: hash,
-      confirmPassword: hash,
-    });
-
-    // Generate JWT Token
-    const token = jwt.sign({ email }, process.env.JWT_SECRETKEY);
-
-    // set JWT token in a cookie
-    res.cookie("JWT_TOEKN", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV || "production",
-      sameSite: "Strict",
-    });
-
-    res.status(201).json({
-      message: "User Registration Successfull",
-      user,
-    });
+    const allUserData = await User.find();
+    res.status(200).json(allUserData);
   } catch (error) {
-    console.error("Error :", error);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
+    console.log("Internal Server Error", error);
+    throw error;
   }
 };
 
-// Find Single User
-const singleUser = async (req, res, next) => {
+// Feedback Controller
+const feedback = async (req, res) => {
   try {
-    // Extract ID from Router Params
-    const { id } = req.params;
-
-    console.log("User ID :", id);
-
-    // check user provide user ID or not
-    if (!id) {
-      return res.status(400).json({
-        message: "User ID is Required",
-      });
-    }
-
-    const user = await Register.findById(id);
-
-    // Check User id found in Database
-    if (!user) {
-      res.status(404).json({
-        message: "User Not Found",
-      });
-    }
-
-    res.status(200).json({
-      user,
-    });
   } catch (error) {
-    console.error("Error :", error);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
+    console.log("Internal Server Error", error);
+    throw error;
   }
 };
 
-// Updated Single User Details
-const updateUserDetails = async (req, res, next) => {
-  try {
-    // Get Id from Route
-    const { id } = req.params;
-    if (!id) {
-      return res.status(401).json({
-        message: "User ID is Required",
-      });
-    }
-
-    // Get Updated user Details from request body
-    const updatedData = req.body;
-
-    const user = await Register.findByIdAndUpdate(id, updatedData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!user) {
-      res.status(404).json({
-        message: "User Not Found",
-      });
-    }
-
-    res.status(200).json({ message: "User Updated Successfully", user });
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
-  }
-};
-
-// Delete Single User
-const deletedUser = async (req, res, next) => {
-  try {
-    // get user ID by Route Params
-    const { id } = req.params;
-
-    // Check user Provide ID no not
-    if (!id) {
-      return res.status(404).json({
-        message: "User ID is Required",
-      });
-    }
-
-    const user = await Register.findByIdAndDelete(id);
-
-    res.status(200).json({
-      message: "User Deleted Successfull",
-    });
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({
-      message: "Internal Server Error",
-    });
-  }
-};
-
-export { allUser, registerUser, singleUser, updateUserDetails, deletedUser };
+export { registerUserController, allUser, login };
